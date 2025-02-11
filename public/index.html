@@ -1,0 +1,109 @@
+<!-- public/index.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bun CRUD App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 class="text-3xl font-bold mb-8 text-center text-gray-800">タスク管理</h1>
+        
+        <!-- タスク追加フォーム -->
+        <form id="taskForm" class="mb-8">
+            <div class="flex gap-4">
+                <input type="text" id="taskInput" 
+                       class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:border-blue-500"
+                       placeholder="新しいタスクを入力" required>
+                <button type="submit" 
+                        class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                    追加
+                </button>
+            </div>
+        </form>
+
+        <!-- タスクリスト -->
+        <div id="taskList" class="space-y-4"></div>
+    </div>
+
+    <script>
+        // タスクの取得と表示
+        async function fetchTasks() {
+            const response = await fetch('/api/tasks');
+            const tasks = await response.json();
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+
+            tasks.forEach(task => {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'flex items-center justify-between p-4 bg-white rounded-lg shadow';
+                taskElement.innerHTML = `
+                    <div class="flex items-center gap-4 flex-1">
+                        <input type="checkbox" ${task.completed ? 'checked' : ''}
+                               onchange="toggleTask(${task.id}, '${task.title}', this.checked)"
+                               class="w-5 h-5 rounded border-gray-300 text-blue-500 focus:ring-blue-500">
+                        <input type="text" value="${task.title}"
+                               onchange="updateTask(${task.id}, this.value, ${task.completed})"
+                               class="flex-1 px-2 py-1 border-0 focus:outline-none focus:border-b-2 focus:border-blue-500 ${task.completed ? 'line-through text-gray-500' : ''}">
+                    </div>
+                    <button onclick="deleteTask(${task.id})"
+                            class="px-3 py-1 text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        削除
+                    </button>
+                `;
+                taskList.appendChild(taskElement);
+            });
+        }
+
+        // タスクの追加
+        document.getElementById('taskForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('taskInput');
+            const title = input.value.trim();
+
+            if (title) {
+                await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title })
+                });
+                input.value = '';
+                fetchTasks();
+            }
+        };
+
+        // タスクの更新（タイトル変更）
+        async function updateTask(id, title, completed) {
+            await fetch(`/api/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, completed })
+            });
+            fetchTasks();
+        }
+
+        // タスクの完了状態切り替え
+        async function toggleTask(id, title, completed) {
+            await fetch(`/api/tasks/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, completed })
+            });
+            fetchTasks();
+        }
+
+        // タスクの削除
+        async function deleteTask(id) {
+            if (confirm('このタスクを削除してもよろしいですか？')) {
+                await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+                fetchTasks();
+            }
+        }
+
+        // 初期表示
+        fetchTasks();
+    </script>
+</body>
+</html>
