@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: bun-crud-app
+    runtime: node
+    plan: free
+    buildCommand: curl -fsSL https://bun.sh/install | bash && ~/.bun/bin/bun install
+    startCommand: ~/.bun/bin/bun run index.ts
+    envVars:
+      - key: PORT
+        value: 10000
+    autoDeploy: true
